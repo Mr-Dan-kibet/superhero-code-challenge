@@ -202,6 +202,12 @@ python app.py
 ```
 #### API available at: http://127.0.0.1:5555
 
+## Author
 
+This project was created by Dev. Dan Rotich
+
+## License
+
+This project is open source and is available for educational purposes
 
 
