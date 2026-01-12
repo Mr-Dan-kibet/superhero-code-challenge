@@ -51,6 +51,9 @@ class HeroPower(db.Model):
     hero = relationship("Hero", back_populates='hero_powers')
     power = relationship("Power", back_populates='hero_powers')
 
+    serialize_rules = ("-hero.hero_power", "-power.hero_power", )
+
+
 
     
     
