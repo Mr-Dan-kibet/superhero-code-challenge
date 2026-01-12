@@ -2,13 +2,13 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import  relationship
+from sqlalchemy.orm import  relationship, validates
 
 metadata = MetaData()
 db = SQLAlchemy(metadata=metadata)
 
 
-class Hero(db.Model):
+class Hero(db.Model, SerializerMixin):
 
     __tablename__ = "heros"
 
@@ -22,13 +22,16 @@ class Hero(db.Model):
     # defines association proxy beween heros and powers tables
     powers = association_proxy("hero_powers", "power")
 
-class Power(db.Model):
+    # serilization rules to avoid reccursion errors
+    serialize_rules = ("-hero_powers.hero",)
+
+class Power(db.Model, SerializerMixin):
 
     __tablename__ = 'powers'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    description = db.Column(db.String)
+    name = db.Column(db.String, nullable=False)
+    description = db.Column(db.String, nullable=False)
 
     # defines relationship between powers and hero_powers tables
     hero_powers = relationship("HeroPower", back_populates="power", cascade="all, delete-orphan")
@@ -36,9 +39,12 @@ class Power(db.Model):
     # defines association proxy beween heros and powers tables
     heroes = association_proxy("hero_powers", "hero")
 
+    # serilization rules to avoid reccursion errors
+    serialize_rules = ("-hero_powers.power",)
 
+    # Validation for description characters; should be more than 20
 
-class HeroPower(db.Model):
+class HeroPower(db.Model, SerializerMixin):
 
     __tablename__ = 'hero_powers'
 
@@ -51,7 +57,9 @@ class HeroPower(db.Model):
     hero = relationship("Hero", back_populates='hero_powers')
     power = relationship("Power", back_populates='hero_powers')
 
-    serialize_rules = ("-hero.hero_power", "-power.hero_power", )
+    # serilization rules to avoid reccursion errors
+    serialize_rules = ("-hero.hero_powers", "-power.hero_powers", )
+
 
 
 
