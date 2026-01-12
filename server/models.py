@@ -43,6 +43,13 @@ class Power(db.Model, SerializerMixin):
     serialize_rules = ("-hero_powers.power",)
 
     # Validation for description characters; should be more than 20
+    @validates('description')
+    def validate_description(self, key, value):
+        if not value:
+            raise ValueError("Description must be present")
+        if len(value)<20:
+            raise ValueError("Description must be 20 characters or longer")
+        return value
 
 class HeroPower(db.Model, SerializerMixin):
 
@@ -59,6 +66,13 @@ class HeroPower(db.Model, SerializerMixin):
 
     # serilization rules to avoid reccursion errors
     serialize_rules = ("-hero.hero_powers", "-power.hero_powers", )
+
+    # validation for strength input; validates if strength is one of the 3 options(weak, average, strong)
+    @validates('strength')
+    def validate_strength(self, key, value):
+        if value not in ('Strong', 'Weak', 'Average'):
+            raise ValueError('Invalid! strength must be; Strong, Weak or Average')
+        return value
 
 
 
