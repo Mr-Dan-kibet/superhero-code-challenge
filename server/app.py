@@ -47,13 +47,58 @@ class PowerById(Resource):
 
         return power.to_dict(), 200
 
+    def patch(self, id):
+        power = Power.query.get(id)
+
+        if not power:
+            return not_found("Power")
+
+        data = request.get_json()
+
+        if "description" in data:
+            if not data["description"]:
+                return {"errors": ["Description must be present"]}, 400
+            if len(data["description"]) < 20:
+                return {"errors": ["Description must be 20 characters or longer"]}, 400
+
+            power.description = data["description"]
+
+        db.session.commit()
+        return power.to_dict(), 200
+
+class HeroPowers(Resource):
+
+    def post(self):
+        data = request.get_json()
+
+        try:
+            # create HeroPower instance
+            hero_power = HeroPower(
+                strength=data.get("strength"),
+                hero_id=data.get("hero_id"),
+                power_id=data.get("power_id")
+            )
+
+            db.session.add(hero_power)
+            db.session.commit()
+
+            return hero_power.to_dict(), 201
+
+        except ValueError as e:
+            # catches model validations (strength, etc.)
+            return {"errors": [str(e)]}, 400
+
+        except Exception:
+            # catches FK errors, missing fields, etc.
+            db.session.rollback()
+            return {"errors": ["validation errors"]}, 400    
+
 
 api.add_resource(Heros, "/heros")
 api.add_resource(HeroById, "/heros/<int:id>")
 api.add_resource(Powers, "/powers")
-
-
-
+api.add_resource(PowerById, "/powers/<int:id>")
+api.add_resource(HeroPowers, "/hero_powers")
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
