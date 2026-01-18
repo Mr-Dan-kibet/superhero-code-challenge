@@ -19,21 +19,54 @@ def not_found(resource="Resource"):
 class Heros(Resource):
 
     def get(self):
-        return [hero.to_dict() for hero in Hero.query.all()], 200
+        heroes = Hero.query.all()
+
+        response = [
+            {
+                "id": hero.id,
+                "name": hero.name,
+                "super_name": hero.super_name
+            }
+            for hero in heroes
+        ]
+
+        return response, 200
 
 class HeroById(Resource):
-
     def get(self, id):
         hero = Hero.query.get(id)
 
         if not hero:
-            return not_found("Hero")
+            return {"error": "Hero not found"}, 404
 
-        return hero.to_dict(), 200
+        return {
+            "id": hero.id,
+            "name": hero.name,
+            "super_name": hero.super_name,
+            "hero_powers": [
+                {
+                    "hero_id": hp.hero_id,
+                    "id": hp.id,
+                    "power": {
+                        "description": hp.power.description,
+                        "id": hp.power.id,
+                        "name": hp.power.name
+                    },
+                    "power_id": hp.power_id,
+                    "strength": hp.strength
+                }
+                for hp in hero.hero_powers
+            ]
+        }, 200
+
 
 class Powers(Resource):
     def get(self):
-        return [power.to_dict() for power in Power.query.all()], 200
+        return [
+            power.to_dict(only=("description", "id", "name"))
+            for power in Power.query.all()
+        ], 200
+
 
 
 class PowerById(Resource):
@@ -42,11 +75,15 @@ class PowerById(Resource):
         power = Power.query.get(id)
 
         if not power:
-
             return not_found("Power")
 
-        return power.to_dict(), 200
+        response = {
+            "description": power.description,
+            "id": power.id,
+            "name": power.name
+        }
 
+        return response, 200
     def patch(self, id):
         power = Power.query.get(id)
 
@@ -58,13 +95,22 @@ class PowerById(Resource):
         if "description" in data:
             if not data["description"]:
                 return {"errors": ["Description must be present"]}, 400
+
             if len(data["description"]) < 20:
                 return {"errors": ["Description must be 20 characters or longer"]}, 400
 
             power.description = data["description"]
 
         db.session.commit()
-        return power.to_dict(), 200
+
+        response = {
+            "description": power.description,
+            "id": power.id,
+            "name": power.name
+        }
+
+        return response, 200
+
 
 class HeroPowers(Resource):
 
@@ -82,7 +128,24 @@ class HeroPowers(Resource):
             db.session.add(hero_power)
             db.session.commit()
 
-            return hero_power.to_dict(), 201
+            response = {
+                "id": hero_power.id,
+                "hero_id": hero_power.hero_id,
+                "power_id": hero_power.power_id,
+                "strength": hero_power.strength,
+                "hero": {
+                    "id": hero_power.hero.id,
+                    "name": hero_power.hero.name,
+                    "super_name": hero_power.hero.super_name
+                },
+                "power": {
+                    "id": hero_power.power.id,
+                    "name": hero_power.power.name,
+                    "description": hero_power.power.description
+                }
+            }
+
+            return response, 201
 
         except ValueError as e:
             # catches model validations (strength, etc.)
@@ -94,8 +157,8 @@ class HeroPowers(Resource):
             return {"errors": ["validation errors"]}, 400    
 
 
-api.add_resource(Heros, "/heros")
-api.add_resource(HeroById, "/heros/<int:id>")
+api.add_resource(Heros, "/heroes")
+api.add_resource(HeroById, "/heroes/<int:id>")
 api.add_resource(Powers, "/powers")
 api.add_resource(PowerById, "/powers/<int:id>")
 api.add_resource(HeroPowers, "/hero_powers")
